@@ -32,8 +32,47 @@ PostgreSQL and Microsoft SQL Server (SQL Server) are both powerful RDBMS, but SQ
 
 ## CRUD
 ## Foreign key
+A **foreign key** is a column (or a group of columns) in one table that references the **primary key** of another table, establishing a link between the two tables. The table containing the foreign key is known as the “child table” and the table to which it refers is known as the “parent table.”
+
+A foreign key creates a link between two tables by ensuring that any data entered into the foreign key column must already exist in the parent table. This helps maintain data integrity by preventing orphan records and ensuring that relationships between data remain consistent.
+
+In PostgreSQL, foreign keys come with several constraints when creating or altering a table:
+- **ON DELETE CASCADE**: Automatically deletes any rows in the child table when the corresponding row in the parent table is deleted.
+- **ON DELETE SET NULL**: Sets the foreign key value in the child table to NULL when the corresponding row in the parent table is deleted.
+- **ON UPDATE CASCADE**: Updates the foreign key in the child table when the corresponding primary key in the parent table is updated
+
 ## Join
+**JOIN** is used to combine columns from one (self-join) or more tables based on the values of the common columns between related tables. The common columns are typically the primary key columns of the first table and the foreign key columns of the second table.
+PostgreSQL supports *inner join*, *left join*, *right join*, *full outer join*, *cross join*, *natural join*, and a special kind of join called *self-join*.
+### Inner join
+`INNER JOIN` returns only matching rows from both tables. If there is no match, the row is excluded.
+
+### Left join
+`LEFT JOIN` returns all rows from the left table and only matching rows from the right table. If no match is found, NULL is returned for columns from the right table.
+
+### Right join
+`RIGHT JOIN` returns all rows from the right table and only matching rows from the left table. If no match is found, NULL is returned for columns from the left table.
+
+### Full outer join
+`FULL OUTER JOIN` combine data from two tables and returns all rows from both tables, including matching and non-matching rows from both sides. If no match is found, NULL is returned for missing values.
+
+### Cross join
+`CROSS JOIN` returns the cartesian product of two tables. Its clause does not have a join predicate.
+
+### Natural join
+`NATURAL JOIN` is a join that creates an implicit join based on the same column names in the joined tables.
+
+### Self-join
+A **self-join** is a regular join that joins a table to itself.
+
 ## Sub query
 ## Index
 ## Partition
 ## Transaction
+A database transaction is a single unit of work that consists of one or more operations.
+A classical example of a transaction is a bank transfer from one account to another. A complete transaction must ensure a balance between the sender and receiver accounts.
+A PostgreSQL transaction is atomic, consistent, isolated, and durable. These properties are often referred to collectively as ACID:
+- **Atomicity** guarantees that the transaction is completed in an all-or-nothing manner.
+- **Consistency** ensures that changes to data written to the database are valid and adhere to predefined rules.
+- **Isolation** determines how the integrity of a transaction is visible to other transactions.
+- **Durability** ensures that transactions that have been committed are permanently stored in the database.
