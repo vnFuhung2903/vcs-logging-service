@@ -43,7 +43,6 @@ In PostgreSQL, foreign keys come with several constraints when creating or alter
 
 ## Join
 **JOIN** is used to combine columns from one (self-join) or more tables based on the values of the common columns between related tables. The common columns are typically the primary key columns of the first table and the foreign key columns of the second table.
-PostgreSQL supports *inner join*, *left join*, *right join*, *full outer join*, *cross join*, *natural join*, and a special kind of join called *self-join*.
 ### Inner join
 `INNER JOIN` returns only matching rows from both tables. If there is no match, the row is excluded.
 
@@ -66,8 +65,34 @@ PostgreSQL supports *inner join*, *left join*, *right join*, *full outer join*, 
 A **self-join** is a regular join that joins a table to itself.
 
 ## Sub query
+A subquery is a query nested inside another query. Subqueries are used to perform complex data retrieval operations and can return individual values or a set of rows that the main query uses for its conditions.
+
 ## Index
+An index in PostgreSQL is a tool that helps to speed up the process of finding data in a table.
+### B-Tree Index
+B-Tree is the default index type in PostgreSQL and is well-suited for most scenarios. In particular, the PostgreSQL query planner will consider using a B-tree index whenever an indexed column is involved in a comparison.
+
+### GiST (Generalized Search Tree) Index
+GiST indexes are flexible and support a wide range of data types and search operations. They are particularly useful for spatial and full-text search queries.
+
+### GIN (Generalized Inverted Tree) Index
+GIN indexes are designed for handling complex data types such as arrays and full-text searches.
+
+### BRIN
+BRIN indexes are suitable for large tables with ordered data. They divide the table into blocks and store summarized information for each block, making them efficient for range queries on sorted data.
+
 ## Partition
+Partitioning refers to splitting logically one large table into smaller physical pieces. The table that is divided is referred to as a **partitioned table**. The partitioned table itself is a “virtual” table having no storage of its own. Instead, the storage belongs to **partitions**, which are tables associated with the partitioned table. Each partition stores a subset of the data as defined by its partition bounds. All rows inserted into a partitioned table will be routed to the appropriate one of the partitions based on the values of the partition key column(s). Updating the partition key of a row will cause it to be moved into a different partition if it no longer satisfies the partition bounds of its original partition.\
+Partitions may themselves be defined as partitioned tables, resulting in sub-partitioning.\
+### Range Partitioning
+The table is partitioned into “ranges” defined by a key column or set of columns, with no overlap between the ranges of values assigned to different partitions. Each range's bounds are understood as being inclusive at the lower end and exclusive at the upper end.
+
+### List Partitioning
+The table is partitioned by explicitly listing which key value(s) appear in each partition.
+
+### Hash Partitioning
+The table is partitioned by specifying a modulus and a remainder for each partition. Each partition will hold the rows for which the hash value of the partition key divided by the specified modulus will produce the specified remainder.
+
 ## Transaction
 A database transaction is a single unit of work that consists of one or more operations.
 A classical example of a transaction is a bank transfer from one account to another. A complete transaction must ensure a balance between the sender and receiver accounts.
