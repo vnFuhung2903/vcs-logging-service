@@ -31,18 +31,60 @@ PostgreSQL and Microsoft SQL Server (SQL Server) are both powerful RDBMS, but SQ
 | **Cost** | Free and open-source | Requires licensing fees, can be expensive for large deployments |
 
 ## CRUD
-## Foreign key
-A **foreign key** is a column (or a group of columns) in one table that references the **primary key** of another table, establishing a link between the two tables. The table containing the foreign key is known as the “child table” and the table to which it refers is known as the “parent table.”
+CRUD stands for **Create**, **Read**, **Update**, and **Delete**, which are the four basic operations for managing data in a database, including PostgreSQL.
+### Create
+Used to add new records to a table
+```
+res := ur.Db.Create(model.User{
+    Id:       user.Id,
+    Email:    user.Email,
+    Name:     user.Name,
+    Password: password,
+})
+```
 
-A foreign key creates a link between two tables by ensuring that any data entered into the foreign key column must already exist in the parent table. This helps maintain data integrity by preventing orphan records and ensuring that relationships between data remain consistent.
+### Read
+Used to retrieve records from a table
+```
+res = ur.Db.Find(user, model.User{Email: email})
+```
+
+### Update
+Used to modify existing records
+```
+res := ur.Db.Save(model.User{
+    Id:       user.Id,
+    Email:    email,
+    Name:     user.Name,
+    Password: user.Password,
+})
+```
+
+### Delete
+Used to remove records from a table
+```
+```
+
+## Foreign key
+A **foreign key** is a column (or a group of columns) in one table that references the **primary key** of another table, establishing a link between the two tables, ensuring that any data entered into the foreign key column must already exist in the parent table.
 
 In PostgreSQL, foreign keys come with several constraints when creating or altering a table:
 - **ON DELETE CASCADE**: Automatically deletes any rows in the child table when the corresponding row in the parent table is deleted.
 - **ON DELETE SET NULL**: Sets the foreign key value in the child table to NULL when the corresponding row in the parent table is deleted.
 - **ON UPDATE CASCADE**: Updates the foreign key in the child table when the corresponding primary key in the parent table is updated
 
+```
+type User struct {
+	Id       uint   `gorm:"primaryKey"`
+	Name     string `gorm:"not null"`
+	Password string
+	Email    string   `gorm:"unique;not null"`
+	Wallets  []Wallet `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
+}
+```
+
 ## Join
-**JOIN** is used to combine columns from one (self-join) or more tables based on the values of the common columns between related tables. The common columns are typically the primary key columns of the first table and the foreign key columns of the second table.
+**JOIN** is used to combine columns from one (self-join) or more tables based on the values of the common columns between related tables.
 ### Inner join
 `INNER JOIN` returns only matching rows from both tables. If there is no match, the row is excluded.
 
@@ -68,7 +110,6 @@ A **self-join** is a regular join that joins a table to itself.
 A subquery is a query nested inside another query. Subqueries are used to perform complex data retrieval operations and can return individual values or a set of rows that the main query uses for its conditions.
 
 ## Index
-An index in PostgreSQL is a tool that helps to speed up the process of finding data in a table.
 ### B-Tree Index
 B-Tree is the default index type in PostgreSQL and is well-suited for most scenarios. In particular, the PostgreSQL query planner will consider using a B-tree index whenever an indexed column is involved in a comparison.
 
@@ -81,9 +122,18 @@ GIN indexes are designed for handling complex data types such as arrays and full
 ### BRIN
 BRIN indexes are suitable for large tables with ordered data. They divide the table into blocks and store summarized information for each block, making them efficient for range queries on sorted data.
 
+```
+type Transaction struct {
+	Id         uint `gorm:"primaryKey"`
+	From       uint `gorm:"not null;index:,using:gin"`
+	To         uint `gorm:"not null"`
+	Amount     uint `gorm:"default:0"`
+	CreateTime uint `gorm:"index:,using:brin"`
+}
+```
+
 ## Partition
-Partitioning refers to splitting logically one large table into smaller physical pieces. The table that is divided is referred to as a **partitioned table**. The partitioned table itself is a “virtual” table having no storage of its own. Instead, the storage belongs to **partitions**, which are tables associated with the partitioned table. Each partition stores a subset of the data as defined by its partition bounds. All rows inserted into a partitioned table will be routed to the appropriate one of the partitions based on the values of the partition key column(s). Updating the partition key of a row will cause it to be moved into a different partition if it no longer satisfies the partition bounds of its original partition.\
-Partitions may themselves be defined as partitioned tables, resulting in sub-partitioning.\
+Partitioning refers to splitting logically one large table into smaller physical pieces. The table that is divided is referred to as a **partitioned table**. The partitioned table itself is a “virtual” table having no storage of its own. Instead, the storage belongs to **partitions**, which are tables associated with the partitioned table. Each partition stores a subset of the data as defined by its partition bounds. All rows inserted into a partitioned table will be routed to the appropriate one of the partitions based on the values of the partition key column(s). Updating the partition key of a row will cause it to be moved into a different partition if it no longer satisfies the partition bounds of its original partition.
 ### Range Partitioning
 The table is partitioned into “ranges” defined by a key column or set of columns, with no overlap between the ranges of values assigned to different partitions. Each range's bounds are understood as being inclusive at the lower end and exclusive at the upper end.
 
