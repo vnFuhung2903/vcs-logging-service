@@ -1,2 +1,4 @@
-[postgresql](./POSTGRESQL.md)
-[elasticsearch](./ELASTICSEARCH.md)
+# vcs-logging-service
+## Table of content
+- [postgresql](./POSTGRESQL.md)
+- [elasticsearch](./ELASTICSEARCH.md)
