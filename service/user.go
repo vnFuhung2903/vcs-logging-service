@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/mail"
 
-	"github.com/vnFuhung2903/postgresql/api"
-	"github.com/vnFuhung2903/postgresql/model"
-	"github.com/vnFuhung2903/postgresql/repository"
+	"github.com/vnFuhung2903/vcs-logging-service/model"
+	"github.com/vnFuhung2903/vcs-logging-service/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	Register(req *api.RegisterReqBody) (*model.User, error)
+	Register(email string, password string, name string) (*model.User, error)
+	GetUserByEmail(email string) ([]*model.User, error)
 }
 
 type userService struct {
@@ -22,13 +22,13 @@ func NewUserService(ur *repository.UserRepository) UserService {
 	return &userService{Ur: *ur}
 }
 
-func (userService *userService) Register(req *api.RegisterReqBody) (*model.User, error) {
-	_, err := mail.ParseAddress(req.Email)
+func (userService *userService) Register(email string, password string, name string) (*model.User, error) {
+	_, err := mail.ParseAddress(email)
 	if err != nil {
 		return nil, err
 	}
 
-	users, err := userService.Ur.FindByEmail(req.Email)
+	users, err := userService.Ur.FindByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -37,15 +37,24 @@ func (userService *userService) Register(req *api.RegisterReqBody) (*model.User,
 		return nil, errors.New("email address is in used")
 	}
 
-	password, err := bcrypt.GenerateFromPassword([]byte(req.Password), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := userService.Ur.CreateUser(req.Email, req.Name, string(password))
+	user, err := userService.Ur.CreateUser(email, name, string(hash))
 	if err != nil {
 		return nil, err
 	}
 
 	return user, nil
+}
+
+func (userService *userService) GetUserByEmail(email string) ([]*model.User, error) {
+	wallets, err := userService.Ur.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	return wallets, nil
 }

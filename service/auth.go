@@ -2,16 +2,14 @@ package service
 
 import (
 	"errors"
-	"net/mail"
 
-	"github.com/vnFuhung2903/postgresql/api"
-	"github.com/vnFuhung2903/postgresql/model"
-	"github.com/vnFuhung2903/postgresql/repository"
+	"github.com/vnFuhung2903/vcs-logging-service/model"
+	"github.com/vnFuhung2903/vcs-logging-service/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
-	Login(req *api.LoginReqBody) (*model.User, error)
+	Login(email string, password string) (*model.User, error)
 }
 
 type authService struct {
@@ -22,13 +20,8 @@ func NewAuthService(ur *repository.UserRepository) AuthService {
 	return &authService{Ur: *ur}
 }
 
-func (authService *authService) Login(req *api.LoginReqBody) (*model.User, error) {
-	_, err := mail.ParseAddress(req.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	users, err := authService.Ur.FindByEmail(req.Email)
+func (authService *authService) Login(email string, password string) (*model.User, error) {
+	users, err := authService.Ur.FindByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +30,7 @@ func (authService *authService) Login(req *api.LoginReqBody) (*model.User, error
 		return nil, errors.New("more than one user found")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(users[0].Password), []byte(password))
 	if err != nil {
 		return nil, err
 	}

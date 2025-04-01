@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/vnFuhung2903/postgresql/model"
+	"github.com/vnFuhung2903/vcs-logging-service/model"
 	"gorm.io/gorm"
 )
 
@@ -9,7 +9,7 @@ type WalletRepository interface {
 	FindAll() ([]*model.Wallet, error)
 	FindById(id uint) ([]*model.Wallet, error)
 	FindByUserId(userId uint) ([]*model.Wallet, error)
-	CreateWallet(userId uint) (*model.Wallet, error)
+	CreateWallet(userId uint, walletNumber uint) (*model.Wallet, error)
 	UpdateBalance(wallet *model.Wallet, balance uint) error
 }
 
@@ -48,9 +48,10 @@ func (wr *walletRepository) FindByUserId(userId uint) ([]*model.Wallet, error) {
 	return wallets, nil
 }
 
-func (wr *walletRepository) CreateWallet(userId uint) (*model.Wallet, error) {
+func (wr *walletRepository) CreateWallet(userId uint, walletNumber uint) (*model.Wallet, error) {
 	res := wr.Db.Create(model.Wallet{
-		UserId: userId,
+		UserId:       userId,
+		WalletNumber: walletNumber,
 	})
 	if res.Error != nil {
 		return nil, res.Error

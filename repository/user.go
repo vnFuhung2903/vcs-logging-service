@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/vnFuhung2903/postgresql/model"
+	"github.com/vnFuhung2903/vcs-logging-service/model"
 	"gorm.io/gorm"
 )
 

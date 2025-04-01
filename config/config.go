@@ -4,11 +4,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
+	"github.com/vnFuhung2903/vcs-logging-service/repository"
+	"github.com/vnFuhung2903/vcs-logging-service/service"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func ConnectPostgresDb() *gorm.DB {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
@@ -20,4 +28,11 @@ func ConnectPostgresDb() *gorm.DB {
 		panic(err)
 	}
 	return db
+}
+
+func ConnectServices(db *gorm.DB) (service.AuthService, service.UserService, service.WalletService) {
+	userRepo := repository.NewUserRepository(db)
+	walletRepo := repository.NewWalletRepository(db)
+
+	return service.NewAuthService(&userRepo), service.NewUserService(&userRepo), service.NewWalletService(&walletRepo)
 }
