@@ -83,11 +83,10 @@ In PostgreSQL, foreign keys come with several constraints when creating or alter
 
 ```
 type User struct {
-	Id       uint   `gorm:"primaryKey"`
-	Name     string `gorm:"not null"`
+	Id       uint `gorm:"primaryKey"`
 	Password string
-	Email    string   `gorm:"unique;not null"`
-	Wallets  []Wallet `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
+	Email    string `gorm:"unique;not null"`
+	Logs     []Log  `gorm:"foreignKey:UserID"`
 }
 ```
 
@@ -131,11 +130,14 @@ GIN indices are designed for handling complex data types such as arrays and full
 BRIN indices are suitable for large tables with ordered data. They divide the table into blocks and store summarized information for each block, making them efficient for range queries on sorted data.
 
 ```
-type Wallet struct {
-	Id           uint `gorm:"primaryKey"`
-	UserId       uint `gorm:"not null;index"`
-	WalletNumber uint `gorm:"unique"`
-	Balance      uint `gorm:"default:0"`
+type Log struct {
+	Id        uint   `gorm:"primaryKey"`
+	UserId    uint   `gorm:"not null;index"`
+	Operation string `gorm:"not null;index"`
+	Collumn   string
+	OldData   string
+	NewData   string
+	UpdateAt  time.Time
 }
 ```
 
@@ -163,26 +165,31 @@ db.Transaction(func(tx *gorm.DB) error {
 	authService, userService, walletService := config.ConnectServices(tx)
 	emailTest := "vcs123@test"
 	passwordTest := "123456789Aa@"
-	nameTest := "VCSTest"
-	userCheck, err := userService.GetUserByEmail(emailTest)
+
+	user, err := authService.Login(emailTest, passwordTest)
 	if err != nil {
-		return err
+		user, err = userService.Register(emailTest, passwordTest)
+		if err != nil {
+			return err
+		}
 	}
 
-	var user *model.User
-	if len(userCheck) == 0 {
-		user, err = userService.Register(emailTest, passwordTest, nameTest)
-	} else {
-		user, err = authService.Login(emailTest, passwordTest)
-	}
+	wallet, err := walletService.GetWallet(user.Id)
 	if err != nil {
-		return err
-	}
-
-	wallet, err := walletService.CreateNewWallet(user.Id, rand.Uint())
-	if wallet != nil {
+		wallet, err = walletService.CreateNewWallet(user.Id, rand.Uint())
+		if err != nil {
+			return err
+		}
 		log.Println("Wallet created: ", wallet.WalletNumber)
 	}
+
+	startTime := time.Now().Unix()
+	for i := range 500 {
+		newBalance := wallet.Balance + uint(i)
+		wallet.Balance = newBalance
+		err = walletService.UpdateBalance(wallet, newBalance)
+	}
+	log.Printf("Update 500 records in %v", time.Now().Unix()-startTime)
 	return err
 })
 ```

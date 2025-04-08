@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"net/mail"
 
 	"github.com/vnFuhung2903/vcs-logging-service/model"
@@ -10,8 +9,8 @@ import (
 )
 
 type UserService interface {
-	Register(email string, password string, name string) (*model.User, error)
-	GetUserByEmail(email string) ([]*model.User, error)
+	Register(email string, password string) (*model.User, error)
+	GetUserByEmail(email string) (*model.User, error)
 }
 
 type userService struct {
@@ -22,19 +21,10 @@ func NewUserService(ur *repository.UserRepository) UserService {
 	return &userService{Ur: *ur}
 }
 
-func (userService *userService) Register(email string, password string, name string) (*model.User, error) {
+func (userService *userService) Register(email string, password string) (*model.User, error) {
 	_, err := mail.ParseAddress(email)
 	if err != nil {
 		return nil, err
-	}
-
-	users, err := userService.Ur.FindByEmail(email)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(users) > 0 {
-		return nil, errors.New("email address is in used")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
@@ -42,7 +32,7 @@ func (userService *userService) Register(email string, password string, name str
 		return nil, err
 	}
 
-	user, err := userService.Ur.CreateUser(email, name, string(hash))
+	user, err := userService.Ur.CreateUser(email, string(hash))
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +40,11 @@ func (userService *userService) Register(email string, password string, name str
 	return user, nil
 }
 
-func (userService *userService) GetUserByEmail(email string) ([]*model.User, error) {
-	wallets, err := userService.Ur.FindByEmail(email)
+func (userService *userService) GetUserByEmail(email string) (*model.User, error) {
+	user, err := userService.Ur.FindByEmail(email)
 	if err != nil {
 		return nil, err
 	}
 
-	return wallets, nil
+	return user, nil
 }

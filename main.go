@@ -1,48 +1,42 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"math/rand/v2"
+	"os"
+	"time"
 
 	"github.com/vnFuhung2903/vcs-logging-service/config"
-	"github.com/vnFuhung2903/vcs-logging-service/model"
 	"gorm.io/gorm"
 )
 
+func addTrigger(db *gorm.DB) {
+	sqlBytes, err := os.ReadFile("migration/logs.sql")
+	if err != nil {
+		log.Fatalf("Error reading SQL file: %v", err)
+	}
+	execTrigger := db.Exec(string(sqlBytes))
+	if execTrigger.Error != nil {
+		log.Fatalf("Failed to execute trigger SQL: %v", execTrigger.Error)
+	}
+}
+
 func main() {
 	db := config.ConnectPostgresDb()
-	fmt.Println("Connected to postgresql db")
-	err := db.AutoMigrate(&model.User{}, &model.Wallet{})
-	if err != nil {
-		log.Println("Migrate error: ", err)
-	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		authService, userService, walletService := config.ConnectServices(tx)
-		emailTest := "vcs123@test"
-		passwordTest := "123456789Aa@"
-		nameTest := "VCSTest"
-		userCheck, err := userService.GetUserByEmail(emailTest)
-		if err != nil {
-			return err
-		}
+	// addTrigger(db)
 
-		var user *model.User
-		if len(userCheck) == 0 {
-			user, err = userService.Register(emailTest, passwordTest, nameTest)
-		} else {
-			user, err = authService.Login(emailTest, passwordTest)
+	err := db.Transaction(func(tx *gorm.DB) error {
+		userService := config.ConnectServices(tx)
+		startTime := time.Now().Unix()
+		for i := range 500 {
+			email := string(rune(i)) + "@gmail.com"
+			_, err := userService.Register(email, string(rune(i)))
+			if err != nil {
+				return err
+			}
 		}
-		if err != nil {
-			return err
-		}
-
-		wallet, err := walletService.CreateNewWallet(user.Id, rand.Uint())
-		if wallet != nil {
-			log.Println("Wallet created: ", wallet.WalletNumber)
-		}
-		return err
+		log.Printf("Update 500 records in %v", time.Now().Unix()-startTime)
+		return nil
 	})
 	if err != nil {
 		log.Println("Transaction error: ", err)

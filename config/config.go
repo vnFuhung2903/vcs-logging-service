@@ -2,9 +2,11 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/vnFuhung2903/vcs-logging-service/model"
 	"github.com/vnFuhung2903/vcs-logging-service/repository"
 	"github.com/vnFuhung2903/vcs-logging-service/service"
 	"gorm.io/driver/postgres"
@@ -27,12 +29,16 @@ func ConnectPostgresDb() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("Connected to postgresql db")
+	err = db.AutoMigrate(&model.User{}, &model.Log{})
+	if err != nil {
+		log.Fatalf("Migrate error: %v", err)
+	}
 	return db
 }
 
-func ConnectServices(db *gorm.DB) (service.AuthService, service.UserService, service.WalletService) {
+func ConnectServices(db *gorm.DB) service.UserService {
 	userRepo := repository.NewUserRepository(db)
-	walletRepo := repository.NewWalletRepository(db)
-
-	return service.NewAuthService(&userRepo), service.NewUserService(&userRepo), service.NewWalletService(&walletRepo)
+	return service.NewUserService(&userRepo)
 }
