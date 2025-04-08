@@ -14,29 +14,26 @@ Both PostgreSQL and MySQL are open-source relational database management systems
 
 | Feature | PostgreSQL | MySQL |
 |---------|--------------|--------------|
+| **Database Technology** | Object-Relational Database Management | Relational Database Management |
 | **ACID Compliance** | Fully ACID-compliant in all configurations | Fully ACID-compliant when using InnoDB (default engine) |
 | **Performance** | Better for complex queries, analytics, and write-heavy applications | Faster for read-heavy workloads and simple queries |
-| **Indexing** | Supports advanced indexing: GIN, GiST, BRIN, and full-text search | Basic indexing with B-Tree and some full-text search |
-| **Replication & Clustering** | Supports streaming replication and logical replication natively | Supports replication but requires third-party tools for clustering |
+| **Indexing** | Supports advanced indexing: GIN, GiST, BRIN, and full-text search | Basic indexing with B-Tree and R-Tree |
+| **Data types** | Supports varous data types: Character, numeric, Date/Time, spartial, JSON, monetary, binary, boolean, geometric, list, network address, array, UUID, XML, domain and composity. | Simpler data type: Character, numeric, Date and Time, spartial, JSON |
 | **JSON Support** | Advanced JSONB support for semi-structured data | JSON functions available but not as optimized as PostgreSQL |
 | **Stored Procedures & Functions** | Supports procedural languages (PL/pgSQL, PL/Python, etc.) | Supports stored procedures but with fewer built-in language options |
-| **Concurrency Control** | Uses MVCC (Multi-Version Concurrency Control) to handle concurrent transactions efficiently | Also uses MVCC but may have issues under high concurrency |
-| **Extensibility** | Highly extensible with custom data types, operators, and procedural languages | Limited extensibility compared to PostgreSQL |
-| **Community & Support** | Large and active community, with strong enterprise support | Larger adoption, strong community support |
 
 ### PostgreSQL vs SQL Server
 PostgreSQL and Microsoft SQL Server (SQL Server) are both powerful RDBMS, but SQL Server is a proprietary system mainly used in enterprise environments.
 
 | Feature | PostgreSQL | SQL Server |
 |---------|--------------|--------------|
-| **License** | Open-source (PostgreSQL License) | Proprietary (Microsoft) |
 | **Platform Compatibility** | Runs on Linux, Windows, macOS | Primarily Windows, with some support for Linux |
 | **ACID Compliance** | Fully ACID-compliant | Fully ACID-compliant |
 | **Performance** | Optimized for complex queries and analytics | Strong performance, optimized for Windows environments |
+| **Indexing** | Supports advanced indexing | Supports advanced indexing |
+| **Data types** | Supports varous data types | Supports varous data types |
 | **JSON Support** | Full JSONB support | JSON support but not as advanced as PostgreSQL |
 | **Stored Procedures & Functions** | Supports PL/pgSQL, PL/Python, and other procedural languages | Uses T-SQL for stored procedures and functions |
-| **Scalability** | High scalability with horizontal scaling | Supports vertical scaling with enterprise features |
-| **Security** | Advanced role-based access control, SSL encryption | Enterprise-level security, integration with Active Directory |
 | **Cost** | Free and open-source | Requires licensing fees, can be expensive for large deployments |
 
 ## CRUD
@@ -72,6 +69,8 @@ res := ur.Db.Save(model.User{
 ### Delete
 Used to remove records from a table
 ```
+res := ur.Db.Delete(model.User{}, user.Id)
+
 ```
 
 ## Foreign key
@@ -123,13 +122,13 @@ A subquery is a query nested inside another query. Subqueries are used to perfor
 B-Tree is the default index type in PostgreSQL and is well-suited for most scenarios. In particular, the PostgreSQL query planner will consider using a B-tree index whenever an indexed column is involved in a comparison.
 
 ### GiST (Generalized Search Tree) Index
-GiST indexes are flexible and support a wide range of data types and search operations. They are particularly useful for spatial and full-text search queries.
+GiST indices are flexible and support a wide range of data types and search operations. They are particularly useful for spatial and full-text search queries.
 
 ### GIN (Generalized Inverted Tree) Index
-GIN indexes are designed for handling complex data types such as arrays and full-text searches.
+GIN indices are designed for handling complex data types such as arrays and full-text searches.
 
 ### BRIN
-BRIN indexes are suitable for large tables with ordered data. They divide the table into blocks and store summarized information for each block, making them efficient for range queries on sorted data.
+BRIN indices are suitable for large tables with ordered data. They divide the table into blocks and store summarized information for each block, making them efficient for range queries on sorted data.
 
 ```
 type Wallet struct {

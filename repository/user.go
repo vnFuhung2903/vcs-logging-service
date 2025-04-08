@@ -98,3 +98,8 @@ func (ur *userRepository) UpdatePassword(user *model.User, password string) erro
 	})
 	return res.Error
 }
+
+func (ur *userRepository) DeleteUser(user *model.User) error {
+	res := ur.Db.Delete(model.User{}, user.Id)
+	return res.Error
+}
