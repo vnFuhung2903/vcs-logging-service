@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Log struct {
 	Id        uint   `gorm:"primaryKey"`
@@ -9,5 +11,5 @@ type Log struct {
 	Collumn   string
 	OldData   string
 	NewData   string
-	CreateAt  time.Time
+	CreatedAt time.Time
 }

@@ -41,12 +41,11 @@ CRUD stands for **Create**, **Read**, **Update**, and **Delete**, which are the 
 ### Create
 Used to add new records to a table
 ```
-res := ur.Db.Create(model.User{
-    Id:       user.Id,
-    Email:    user.Email,
-    Name:     user.Name,
-    Password: password,
-})
+newUser := &model.User{
+	Email:    email,
+	Password: password,
+}
+res := ur.Db.Create(newUser)
 ```
 
 ### Read
@@ -58,18 +57,13 @@ res = ur.Db.Find(user, model.User{Email: email})
 ### Update
 Used to modify existing records
 ```
-res := ur.Db.Save(model.User{
-    Id:       user.Id,
-    Email:    email,
-    Name:     user.Name,
-    Password: user.Password,
-})
+res := ur.Db.Model(user).Update("password", password)
 ```
 
 ### Delete
 Used to remove records from a table
 ```
-res := ur.Db.Delete(model.User{}, user.Id)
+res := ur.Db.Delete(user)
 
 ```
 
@@ -83,10 +77,11 @@ In PostgreSQL, foreign keys come with several constraints when creating or alter
 
 ```
 type User struct {
-	Id       uint `gorm:"primaryKey"`
-	Password string
-	Email    string `gorm:"unique;not null"`
-	Logs     []Log  `gorm:"foreignKey:UserID"`
+	Id        uint `gorm:"primaryKey"`
+	Password  string
+	Email     string         `gorm:"unique;not null"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Logs      []Log          `gorm:"foreignKey:UserId;"`
 }
 ```
 
@@ -137,7 +132,7 @@ type Log struct {
 	Collumn   string
 	OldData   string
 	NewData   string
-	UpdateAt  time.Time
+	CreatedAt time.Time
 }
 ```
 
@@ -162,34 +157,14 @@ A PostgreSQL transaction is atomic, consistent, isolated, and durable. These pro
 - **Durability** ensures that transactions that have been committed are permanently stored in the database.
 ```
 db.Transaction(func(tx *gorm.DB) error {
-	authService, userService, walletService := config.ConnectServices(tx)
-	emailTest := "vcs123@test"
-	passwordTest := "123456789Aa@"
-
-	user, err := authService.Login(emailTest, passwordTest)
-	if err != nil {
-		user, err = userService.Register(emailTest, passwordTest)
-		if err != nil {
-			return err
-		}
-	}
-
-	wallet, err := walletService.GetWallet(user.Id)
-	if err != nil {
-		wallet, err = walletService.CreateNewWallet(user.Id, rand.Uint())
-		if err != nil {
-			return err
-		}
-		log.Println("Wallet created: ", wallet.WalletNumber)
-	}
-
-	startTime := time.Now().Unix()
+	userService := config.ConnectServices(tx)
 	for i := range 500 {
-		newBalance := wallet.Balance + uint(i)
-		wallet.Balance = newBalance
-		err = walletService.UpdateBalance(wallet, newBalance)
+		email := fmt.Sprint(i, "@gmail.com")
+		_, err := userService.Register(email, string(rune(i)))
+		if err != nil {
+			return err
+		}
 	}
-	log.Printf("Update 500 records in %v", time.Now().Unix()-startTime)
-	return err
+	return nil
 })
 ```
