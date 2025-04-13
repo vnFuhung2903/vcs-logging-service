@@ -45,10 +45,19 @@ func ConnectServices(db *gorm.DB) service.UserService {
 }
 
 func ConnectESDb() *elasticsearch.Client {
-	es, err := elasticsearch.NewDefaultClient()
+	es, err := elasticsearch.NewClient(
+		elasticsearch.Config{
+			Addresses: []string{"http://localhost:9200"},
+		},
+	)
 	if err != nil {
-		log.Fatalf("ES connection error: %v", err)
+		log.Fatalf("Error creating Elasticsearch client: %s", err)
 	}
-	fmt.Println("Connected to postgresql db")
+	res, err := es.Info()
+	if err != nil {
+		log.Fatalf("Error getting response from Elasticsearch: %s", err)
+	}
+	fmt.Println("Connected to elasticsearch db")
+	defer res.Body.Close()
 	return es
 }

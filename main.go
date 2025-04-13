@@ -93,7 +93,7 @@ func checkDeleteUser(db *gorm.DB) {
 	}
 }
 
-func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime time.Time) {
+func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) {
 	var rows []model.Log
 	res := db.Find(&rows).Where("create_at > ?", lastTime)
 	if res.Error != nil {
@@ -109,7 +109,7 @@ func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime time.Time) {
 		}
 
 		res, err := es.Index(
-			fmt.Sprint(lastTime),
+			lastTime,
 			bytes.NewReader(data),
 			es.Index.WithContext(context.Background()),
 		)
@@ -127,7 +127,7 @@ func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime time.Time) {
 }
 
 func main() {
-	lastTime := time.Now()
+	lastTime := time.Now().Format("2004-03-29")
 	db := config.ConnectPostgresDb()
 	addTrigger(db)
 	checkAdddUsers(db)
