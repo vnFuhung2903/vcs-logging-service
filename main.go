@@ -29,7 +29,7 @@ func addTrigger(db *gorm.DB) {
 func checkAdddUsers(db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		userService := config.ConnectServices(tx)
-		startTime := time.Now().UnixMilli()
+		startTime := time.Now()
 		for i := range 500 {
 			email := fmt.Sprint(i, "@gmail.com")
 			_, err := userService.Register(email, email)
@@ -37,7 +37,7 @@ func checkAdddUsers(db *gorm.DB) {
 				return err
 			}
 		}
-		log.Printf("Insert 500 records in %fs", float64(time.Now().UnixMilli()-startTime)/1000)
+		log.Printf("Insert 500 records in %v", time.Since(startTime))
 		return nil
 	})
 	if err != nil {
@@ -53,7 +53,7 @@ func checkUpdateUser(db *gorm.DB) {
 			return err
 		}
 
-		startTime := time.Now().UnixMilli()
+		startTime := time.Now()
 		for i := range 500 {
 			newPassword := fmt.Sprint(i)
 			err := userService.Update(user, "password", newPassword)
@@ -61,7 +61,7 @@ func checkUpdateUser(db *gorm.DB) {
 				return err
 			}
 		}
-		log.Printf("Update 500 records in %fs", float64(time.Now().UnixMilli()-startTime)/1000)
+		log.Printf("Update 500 records in %v", time.Since(startTime))
 		return nil
 	})
 	if err != nil {
@@ -72,7 +72,7 @@ func checkUpdateUser(db *gorm.DB) {
 func checkDeleteUser(db *gorm.DB) {
 	err := db.Transaction(func(tx *gorm.DB) error {
 		userService := config.ConnectServices(tx)
-		startTime := time.Now().UnixMilli()
+		startTime := time.Now()
 		for i := range 500 {
 			email := fmt.Sprint(i, "@gmail.com")
 			user, err := userService.FindByEmail(email)
@@ -85,7 +85,7 @@ func checkDeleteUser(db *gorm.DB) {
 				return err
 			}
 		}
-		log.Printf("Delete 500 records in %fs", float64(time.Now().UnixMilli()-startTime)/1000)
+		log.Printf("Delete 500 records in %v", time.Since(startTime))
 		return nil
 	})
 	if err != nil {
@@ -93,37 +93,40 @@ func checkDeleteUser(db *gorm.DB) {
 	}
 }
 
-func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) {
+func checkWriteLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) {
 	var rows []model.Log
 	res := db.Find(&rows).Where("create_at > ?", lastTime)
 	if res.Error != nil {
 		log.Fatalf("Reading logs error: %s", res.Error)
 	}
 
-	log.Println("Number of logs: ", len(rows))
-	startTime := time.Now().UnixMilli()
+	startTime := time.Now()
+	var buf bytes.Buffer
 	for _, row := range rows {
+		meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }\n`, lastTime)
 		data, err := json.Marshal(row)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Json marshaling error: %v", err)
 		}
+		data = append(data, byte('\n'))
 
-		res, err := es.Index(
-			lastTime,
-			bytes.NewReader(data),
-			es.Index.WithContext(context.Background()),
-		)
-		if err != nil {
-			log.Fatalf("ES Indexing error: %v", err)
-			break
-		}
-		if res.IsError() {
-			log.Fatalf("ES Indexing error: %v", res.String())
-			break
-		}
-		defer res.Body.Close()
+		buf.Grow(len(meta) + len(data))
+		buf.Write(meta)
+		buf.Write(data)
 	}
-	log.Printf("Delete 500 records in %fs", float64(time.Now().UnixMilli()-startTime)/1000)
+
+	bulkRes, err := es.Bulk(
+		bytes.NewReader(buf.Bytes()),
+		es.Bulk.WithContext(context.Background()),
+	)
+	if err != nil {
+		log.Fatalf("Bulk indexing error: %v", err)
+	}
+	if bulkRes.IsError() {
+		log.Fatalf("Bulk indexing response error: %s", bulkRes.String())
+	}
+	defer bulkRes.Body.Close()
+	log.Printf("Write 500 records to ES in %v", time.Since(startTime))
 }
 
 func main() {
@@ -135,5 +138,5 @@ func main() {
 	checkDeleteUser(db)
 
 	es := config.ConnectESDb()
-	writeLogsToES(db, es, lastTime)
+	checkWriteLogsToES(db, es, lastTime)
 }

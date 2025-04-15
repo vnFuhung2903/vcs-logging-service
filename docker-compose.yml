@@ -11,8 +11,8 @@ services:
       - hungnp25_network
     ports:
       - 5432:5432
-    # volumes:
-    #   - ./data/postgres:/var/lib/postgresql/data
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
     restart: always
@@ -20,13 +20,14 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      # - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     networks:
       - hungnp25_network
     ports:
       - 9200:9200
-    # volumes:
-    #   - ./data/elasticsearch:/usr/share/elasticsearch/data
+      - 9300:9300
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
 networks:
   hungnp25_network:
     driver: bridge
