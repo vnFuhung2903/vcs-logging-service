@@ -12,7 +12,7 @@ type UserService interface {
 	Register(email string, password string) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
 	Update(user *model.User, key string, newData string) error
-	Delete(user *model.User) error
+	Delete(email string) error
 }
 
 type userService struct {
@@ -59,7 +59,7 @@ func (userService *userService) Update(user *model.User, key string, newData str
 	return err
 }
 
-func (userService *userService) Delete(user *model.User) error {
-	err := userService.Ur.DeleteUser(user)
+func (userService *userService) Delete(email string) error {
+	err := userService.Ur.DeleteUser(email)
 	return err
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/robfig/cron/v3"
 	"github.com/vnFuhung2903/vcs-logging-service/config"
 	"github.com/vnFuhung2903/vcs-logging-service/model"
 	"gorm.io/gorm"
@@ -75,12 +76,7 @@ func checkDeleteUser(db *gorm.DB) {
 		startTime := time.Now()
 		for i := range 500 {
 			email := fmt.Sprint(i, "@gmail.com")
-			user, err := userService.FindByEmail(email)
-			if err != nil {
-				return err
-			}
-
-			err = userService.Delete(user)
+			err := userService.Delete(email)
 			if err != nil {
 				return err
 			}
@@ -103,7 +99,7 @@ func checkWriteLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) 
 	startTime := time.Now()
 	var buf bytes.Buffer
 	for _, row := range rows {
-		meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }\n`, lastTime)
+		meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }%s`, lastTime, "\n")
 		data, err := json.Marshal(row)
 		if err != nil {
 			log.Fatalf("Json marshaling error: %v", err)
@@ -126,7 +122,7 @@ func checkWriteLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) 
 		log.Fatalf("Bulk indexing response error: %s", bulkRes.String())
 	}
 	defer bulkRes.Body.Close()
-	log.Printf("Write 500 records to ES in %v", time.Since(startTime))
+	log.Printf("Write %d records to ES in %v", len(rows), time.Since(startTime))
 }
 
 func main() {
@@ -137,6 +133,23 @@ func main() {
 	checkUpdateUser(db)
 	checkDeleteUser(db)
 
-	es := config.ConnectESDb()
-	checkWriteLogsToES(db, es, lastTime)
+	cron := cron.New()
+	id, err := cron.AddFunc("*/1 * * * *", func() {
+		es := config.ConnectESDb()
+		checkWriteLogsToES(db, es, lastTime)
+	})
+	if err != nil {
+		log.Fatalf("Cronjob function adding error: %v", err)
+	}
+
+	cron.Start()
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+
+			entry := cron.Entry(id)
+			lastTime = entry.Prev.Format("2004-03-29")
+		}
+	}()
+	select {}
 }

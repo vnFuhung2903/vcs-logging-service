@@ -14,7 +14,7 @@ type UserRepository interface {
 	CreateUser(email string, password string) (*model.User, error)
 	UpdateEmail(user *model.User, email string) error
 	UpdatePassword(user *model.User, password string) error
-	DeleteUser(user *model.User) error
+	DeleteUser(email string) error
 }
 
 type userRepository struct {
@@ -78,7 +78,7 @@ func (ur *userRepository) UpdatePassword(user *model.User, password string) erro
 	return res.Error
 }
 
-func (ur *userRepository) DeleteUser(user *model.User) error {
-	res := ur.Db.Delete(user)
+func (ur *userRepository) DeleteUser(email string) error {
+	res := ur.Db.Where("email = ?", email).Delete(&model.User{})
 	return res.Error
 }

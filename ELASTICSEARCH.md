@@ -28,9 +28,30 @@ The Search API are used to search and aggregate data stored in Elasticsearch ind
 Enables script document updates. The update API also supports passing a partial document, which is merged into the existing document. To fully replace an existing document, the **Index API** should be used.\
 **Update By Query API** is used to update documents that match the specified query. If no query is specified, performs an update on every document in the data stream or index without modifying the source, which is useful for picking up mapping changes.
 
-### Delete API (Delete)
+### Delete API, Delete By Query API (Delete)
 Remove a document from an index. The index name and document ID must be specified when using **Delete API**.\
 When using **Delete By Query API**, Elasticsearch gets a snapshot of the data stream or index when it begins processing the request and deletes matching documents using internal versioning. If a document changes between the time that the snapshot is taken and the delete operation is processed, it results in a version conflict and the delete operation fails. While processing a delete by query request, Elasticsearch performs multiple search requests sequentially to find all of the matching documents to delete. A bulk delete request is performed for each batch of matching documents. If a search or bulk request is rejected, the requests are retried up to 10 times, with exponential back off. If the maximum retry limit is reached, processing halts and all failed requests are returned in the response. Any delete requests that completed successfully still stick, they are not rolled back.
+
+```
+var buf bytes.Buffer
+for _, row := range rows {
+    meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }%s`, lastTime, "\n")
+    data, err := json.Marshal(row)
+    if err != nil {
+        log.Fatalf("Json marshaling error: %v", err)
+    }
+    data = append(data, byte('\n'))
+
+    buf.Grow(len(meta) + len(data))
+    buf.Write(meta)
+    buf.Write(data)
+}
+
+bulkRes, err := es.Bulk(
+    bytes.NewReader(buf.Bytes()),
+    es.Bulk.WithContext(context.Background()),
+)
+```
 
 ## Aggregate
 Elasticsearch organizes aggregations into three categories:
@@ -50,4 +71,3 @@ Elasticsearch uses a data structure called an **inverted index** that supports v
 ### Search algorithm
 - **Lexical/Full-text search** algorithms: Using inverted indices for full-text searches
 - **Semantic search** algorithms: Leveraging machine learning to capture meaning and content of unstructured data, including text and images, transforming it into embeddings, which are numerical representations stored in vectors. Semantic search uses **approximate nearest neighbor (ANN) algorithms**, then matches vectors of existing documents (a semantic search concerns text) to the query vectors
-- **Keyword search** algorithms: 
