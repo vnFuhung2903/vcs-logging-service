@@ -89,17 +89,19 @@ func checkDeleteUser(db *gorm.DB) {
 	}
 }
 
-func checkWriteLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) {
+func writeLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime time.Time) int {
 	var rows []model.Log
-	res := db.Find(&rows).Where("create_at > ?", lastTime)
+	res := db.Where("created_at > ?", lastTime).Find(&rows)
 	if res.Error != nil {
 		log.Fatalf("Reading logs error: %s", res.Error)
 	}
+	if len(rows) == 0 {
+		return 0
+	}
 
-	startTime := time.Now()
 	var buf bytes.Buffer
 	for _, row := range rows {
-		meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }%s`, lastTime, "\n")
+		meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%d" } }%s`, lastTime.Unix(), "\n")
 		data, err := json.Marshal(row)
 		if err != nil {
 			log.Fatalf("Json marshaling error: %v", err)
@@ -122,34 +124,28 @@ func checkWriteLogsToES(db *gorm.DB, es *elasticsearch.Client, lastTime string) 
 		log.Fatalf("Bulk indexing response error: %s", bulkRes.String())
 	}
 	defer bulkRes.Body.Close()
-	log.Printf("Write %d records to ES in %v", len(rows), time.Since(startTime))
+	return len(rows)
 }
 
 func main() {
-	lastTime := time.Now().Format("2004-03-29")
+	lastTime := time.Now()
 	db := config.ConnectPostgresDb()
 	addTrigger(db)
 	checkAdddUsers(db)
 	checkUpdateUser(db)
 	checkDeleteUser(db)
 
-	cron := cron.New()
-	id, err := cron.AddFunc("*/1 * * * *", func() {
+	cron := cron.New(cron.WithSeconds())
+	_, err := cron.AddFunc("*/30 * * * * *", func() {
 		es := config.ConnectESDb()
-		checkWriteLogsToES(db, es, lastTime)
+		startTime := time.Now()
+		log.Printf("Write %d records to ES in %v", writeLogsToES(db, es, lastTime), time.Since(startTime))
+		lastTime = time.Now()
 	})
 	if err != nil {
 		log.Fatalf("Cronjob function adding error: %v", err)
 	}
 
 	cron.Start()
-	go func() {
-		for {
-			time.Sleep(10 * time.Second)
-
-			entry := cron.Entry(id)
-			lastTime = entry.Prev.Format("2004-03-29")
-		}
-	}()
 	select {}
 }

@@ -11,5 +11,5 @@ type Log struct {
 	Collumn   string
 	OldData   string
 	NewData   string
-	CreatedAt time.Time
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 }
