@@ -28,6 +28,16 @@ services:
       - 9300:9300
     volumes:
       - ./data/elasticsearch:/usr/share/elasticsearch/data
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.0.0
+    container_name: hungnp25_logstash
+    ports:
+      - "5044:5044"
+    environment:
+      - LOGSTASH_LOG_LEVEL=debug
+      - xpack.monitoring.enabled=false
+    networks:
+      - hungnp25_network
 networks:
   hungnp25_network:
     driver: bridge

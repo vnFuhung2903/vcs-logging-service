@@ -51,5 +51,3 @@ CREATE TRIGGER log_user_update_trigger
 AFTER UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION log_user_update();
-
-TRUNCATE TABLE logs, users RESTART IDENTITY CASCADE;
