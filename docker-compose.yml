@@ -29,15 +29,22 @@ services:
     volumes:
       - ./data/elasticsearch:/usr/share/elasticsearch/data
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.0.0
+    image: docker.elastic.co/logstash/logstash:8.11.4
+    restart: always
     container_name: hungnp25_logstash
-    ports:
-      - "5044:5044"
     environment:
       - LOGSTASH_LOG_LEVEL=debug
       - xpack.monitoring.enabled=false
     networks:
       - hungnp25_network
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./jar/jdbc/postgresql-42.7.5.jar:/usr/share/logstash/vendor/jar/jdbc/postgresql-42.7.5.jar
+    depends_on:
+      - postgres
+      - elasticsearch
 networks:
   hungnp25_network:
     driver: bridge

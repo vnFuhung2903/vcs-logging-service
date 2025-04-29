@@ -32,27 +32,6 @@ Enables script document updates. The update API also supports passing a partial 
 Remove a document from an index. The index name and document ID must be specified when using **Delete API**.\
 When using **Delete By Query API**, Elasticsearch gets a snapshot of the data stream or index when it begins processing the request and deletes matching documents using internal versioning. If a document changes between the time that the snapshot is taken and the delete operation is processed, it results in a version conflict and the delete operation fails. While processing a delete by query request, Elasticsearch performs multiple search requests sequentially to find all of the matching documents to delete. A bulk delete request is performed for each batch of matching documents. If a search or bulk request is rejected, the requests are retried up to 10 times, with exponential back off. If the maximum retry limit is reached, processing halts and all failed requests are returned in the response. Any delete requests that completed successfully still stick, they are not rolled back.
 
-```
-var buf bytes.Buffer
-for _, row := range rows {
-    meta := fmt.Appendf(nil, `{ "index" : { "_index" : "%s" } }%s`, lastTime, "\n")
-    data, err := json.Marshal(row)
-    if err != nil {
-        log.Fatalf("Json marshaling error: %v", err)
-    }
-    data = append(data, byte('\n'))
-
-    buf.Grow(len(meta) + len(data))
-    buf.Write(meta)
-    buf.Write(data)
-}
-
-bulkRes, err := es.Bulk(
-    bytes.NewReader(buf.Bytes()),
-    es.Bulk.WithContext(context.Background()),
-)
-```
-
 ## Aggregate
 Elasticsearch organizes aggregations into three categories:
 - **Metric aggregations** that calculate metrics, such as a sum or average, from field values.
