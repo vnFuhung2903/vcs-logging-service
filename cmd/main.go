@@ -138,7 +138,7 @@ func checkDeleteUser(db *gorm.DB) {
 
 func main() {
 	db := config.ConnectPostgresDb()
-	// addTrigger(db)
+	addTrigger(db)
 	checkAddUsers(db)
 	checkUpdateUser(db)
 	checkDeleteUser(db)
