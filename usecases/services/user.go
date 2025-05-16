@@ -1,29 +1,29 @@
-package service
+package services
 
 import (
 	"errors"
 	"net/mail"
 
-	"github.com/vnFuhung2903/vcs-logging-service/model"
-	"github.com/vnFuhung2903/vcs-logging-service/repository"
+	"github.com/vnFuhung2903/vcs-logging-services/models"
+	"github.com/vnFuhung2903/vcs-logging-services/usecases/repositories"
 )
 
 type UserService interface {
-	Register(email string, password string) (*model.User, error)
-	FindByEmail(email string) (*model.User, error)
-	Update(user *model.User, key string, newData string) error
+	Register(email string, password string) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	Update(user *models.User, key string, newData string) error
 	Delete(email string) error
 }
 
 type userService struct {
-	Ur repository.UserRepository
+	Ur repositories.UserRepository
 }
 
-func NewUserService(ur *repository.UserRepository) UserService {
+func NewUserService(ur *repositories.UserRepository) UserService {
 	return &userService{Ur: *ur}
 }
 
-func (userService *userService) Register(email string, password string) (*model.User, error) {
+func (userService *userService) Register(email string, password string) (*models.User, error) {
 	_, err := mail.ParseAddress(email)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (userService *userService) Register(email string, password string) (*model.
 	return user, nil
 }
 
-func (userService *userService) FindByEmail(email string) (*model.User, error) {
+func (userService *userService) FindByEmail(email string) (*models.User, error) {
 	user, err := userService.Ur.FindByEmail(email)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (userService *userService) FindByEmail(email string) (*model.User, error) {
 	return user, nil
 }
 
-func (userService *userService) Update(user *model.User, key string, newData string) error {
+func (userService *userService) Update(user *models.User, key string, newData string) error {
 	var err error
 	switch key {
 	case "email":

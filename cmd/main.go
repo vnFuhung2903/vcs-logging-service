@@ -7,9 +7,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vnFuhung2903/vcs-logging-service/config"
+	"github.com/vnFuhung2903/vcs-logging-services/infra/databases"
+	"github.com/vnFuhung2903/vcs-logging-services/infra/messages"
+	"github.com/vnFuhung2903/vcs-logging-services/usecases/repositories"
+	"github.com/vnFuhung2903/vcs-logging-services/usecases/services"
 	"gorm.io/gorm"
 )
+
+func connectUserService(db *gorm.DB) services.UserService {
+	userRepo := repositories.NewUserRepository(db)
+	return services.NewUserService(&userRepo)
+}
 
 func addTrigger(db *gorm.DB) {
 	sqlBytes, err := os.ReadFile("migration/add_trigger.sql")
@@ -33,18 +41,18 @@ func deleteLogs(db *gorm.DB) {
 	}
 }
 
-func checkAddUsers(db *gorm.DB) {
+func checkAddUsers(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	emails := make(chan string, 500)
 	startTime := time.Now()
 
-	for range 20 {
+	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for email := range emails {
 				err := db.Transaction(func(tx *gorm.DB) error {
-					userService := config.ConnectServices(tx)
+					userService := connectUserService(tx)
 					_, err := userService.Register(email, email)
 					if err != nil {
 						return err
@@ -66,18 +74,18 @@ func checkAddUsers(db *gorm.DB) {
 	log.Printf("Insert 500 records in %v", time.Since(startTime))
 }
 
-func checkUpdateUser(db *gorm.DB) {
+func checkUpdateUser(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	passwords := make(chan string, 500)
 	startTime := time.Now()
 
-	for range 5 {
+	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for password := range passwords {
 				err := db.Transaction(func(tx *gorm.DB) error {
-					userService := config.ConnectServices(tx)
+					userService := connectUserService(tx)
 					user, err := userService.FindByEmail("1@gmail.com")
 					if err != nil {
 						return err
@@ -103,18 +111,18 @@ func checkUpdateUser(db *gorm.DB) {
 	log.Printf("Update 500 records in %v", time.Since(startTime))
 }
 
-func checkDeleteUser(db *gorm.DB) {
+func checkDeleteUser(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	emails := make(chan string, 500)
 	startTime := time.Now()
 
-	for range 20 {
+	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for email := range emails {
 				err := db.Transaction(func(tx *gorm.DB) error {
-					userService := config.ConnectServices(tx)
+					userService := connectUserService(tx)
 					err := userService.Delete(email)
 					if err != nil {
 						return err
@@ -137,10 +145,14 @@ func checkDeleteUser(db *gorm.DB) {
 }
 
 func main() {
-	db := config.ConnectPostgresDb()
+	db := databases.ConnectPostgresDb()
+
+	kafkaWriter := messages.ConnectKafkaWriter("localhost:9092", "logs")
+	defer kafkaWriter.Close()
+
 	addTrigger(db)
-	checkAddUsers(db)
-	checkUpdateUser(db)
-	checkDeleteUser(db)
+	checkAddUsers(db, 20)
+	checkUpdateUser(db, 5)
+	checkDeleteUser(db, 20)
 	deleteLogs(db)
 }
