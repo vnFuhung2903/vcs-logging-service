@@ -40,7 +40,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/joho/godotenv v1.5.1
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/spf13/viper v1.20.1
 	golang.org/x/sync v0.10.0 // indirect
