@@ -9,17 +9,18 @@ type Env struct {
 }
 
 func LoadConfig(path string) (env Env, err error) {
-	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
-	viper.SetConfigType("env")
+	v := viper.New()
+	v.AddConfigPath(path)
+	v.SetConfigName(".env")
+	v.SetConfigType("env")
 
-	viper.AutomaticEnv()
+	v.AutomaticEnv()
 
-	err = viper.ReadInConfig()
+	err = v.ReadInConfig()
 	if err != nil {
 		return
 	}
 
-	err = viper.Unmarshal(&env)
+	err = v.Unmarshal(&env)
 	return
 }

@@ -16,7 +16,7 @@ import (
 
 func connectUserService(db *gorm.DB) services.UserService {
 	userRepo := repositories.NewUserRepository(db)
-	return services.NewUserService(&userRepo)
+	return services.NewUserService(userRepo)
 }
 
 func addTrigger(db *gorm.DB) {
@@ -146,13 +146,27 @@ func checkDeleteUser(db *gorm.DB, workers uint) {
 
 func main() {
 	db := databases.ConnectPostgresDb()
-
-	kafkaWriter := messages.ConnectKafkaWriter("localhost:9092", "logs")
+	err := messages.CreateTopic("hungnp25_kafka:9092", "logstash")
+	if err != nil {
+		log.Fatal(err)
+	}
+	kafkaWriter := messages.ConnectKafkaWriter("hungnp25_kafka:9092", "logstash")
 	defer kafkaWriter.Close()
+	logRepo := repositories.NewLogRepository(db)
+	logService := services.NewLogService(logRepo, kafkaWriter, 5, 500)
 
-	addTrigger(db)
-	checkAddUsers(db, 20)
-	checkUpdateUser(db, 5)
-	checkDeleteUser(db, 20)
+	// addTrigger(db)
 	deleteLogs(db)
+	checkAddUsers(db, 5)
+	checkUpdateUser(db, 5)
+	checkDeleteUser(db, 5)
+
+	err = logService.Process()
+	if err != nil {
+		log.Print(err)
+	}
+	err = logService.DeleteProcessedLogs()
+	if err != nil {
+		log.Print(err)
+	}
 }

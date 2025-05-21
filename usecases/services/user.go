@@ -19,8 +19,8 @@ type userService struct {
 	Ur repositories.UserRepository
 }
 
-func NewUserService(ur *repositories.UserRepository) UserService {
-	return &userService{Ur: *ur}
+func NewUserService(ur repositories.UserRepository) UserService {
+	return &userService{Ur: ur}
 }
 
 func (userService *userService) Register(email string, password string) (*models.User, error) {

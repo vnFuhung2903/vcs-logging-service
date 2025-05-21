@@ -11,7 +11,7 @@ import (
 )
 
 func ConnectPostgresDb() *gorm.DB {
-	env, err := env.LoadConfig("../../.")
+	env, err := env.LoadConfig("./")
 	if err != nil {
 		log.Fatal("Cannot load env variables")
 	}
