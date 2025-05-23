@@ -10,11 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ConnectPostgresDb() *gorm.DB {
-	env, err := env.LoadConfig("./")
-	if err != nil {
-		log.Fatal("Cannot load env variables")
-	}
+func ConnectPostgresDb(env env.Env) *gorm.DB {
 	dsn := fmt.Sprintf("host=localhost user=%s password=%s dbname=%s port=5432 sslmode=disable", env.PostgresUser, env.PostgresPassword, env.PostgresName)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

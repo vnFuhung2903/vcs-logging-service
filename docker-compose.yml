@@ -4,9 +4,9 @@ services:
     restart: always
     container_name: hungnp25_postgres
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_NAME}
     networks:
       - hungnp25_network
     ports:
@@ -18,9 +18,9 @@ services:
     restart: always
     container_name: hungnp25_es
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
     networks:
       - hungnp25_network
     ports:
@@ -33,17 +33,17 @@ services:
     restart: always
     container_name: hungnp25_logstash
     environment:
-      - LOGSTASH_LOG_LEVEL=debug
-      - xpack.monitoring.enabled=false
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      KAFKA_BROKER_ADDRESS: ${KAFKA_BROKER_ADDRESS}
+      LS_PIPELINE_BATCH_SIZE: 500
+      LS_PIPELINE_BATCH_DELAY: 300
     networks:
       - hungnp25_network
     ports:
       - "5044:5044"
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - ./jar/jdbc/postgresql-42.7.5.jar:/usr/share/logstash/vendor/jar/jdbc/postgresql-42.7.5.jar
     depends_on:
-      - postgres
       - elasticsearch
       - kafka
   zookeeper:
@@ -64,7 +64,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.159.129:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1

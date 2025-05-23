@@ -7,8 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"github.com/vnFuhung2903/vcs-logging-services/infra/databases"
 	"github.com/vnFuhung2903/vcs-logging-services/infra/messages"
+	"github.com/vnFuhung2903/vcs-logging-services/pkg/env"
 	"github.com/vnFuhung2903/vcs-logging-services/usecases/repositories"
 	"github.com/vnFuhung2903/vcs-logging-services/usecases/services"
 	"gorm.io/gorm"
@@ -30,21 +32,9 @@ func addTrigger(db *gorm.DB) {
 	}
 }
 
-func deleteLogs(db *gorm.DB) {
-	sqlBytes, err := os.ReadFile("migration/del_logs.sql")
-	if err != nil {
-		log.Fatalf("Error reading SQL file: %v", err)
-	}
-	execTrigger := db.Exec(string(sqlBytes))
-	if execTrigger.Error != nil {
-		log.Fatalf("Failed to execute trigger SQL: %v", execTrigger.Error)
-	}
-}
-
 func checkAddUsers(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	emails := make(chan string, 500)
-	startTime := time.Now()
 
 	for range workers {
 		wg.Add(1)
@@ -71,13 +61,11 @@ func checkAddUsers(db *gorm.DB, workers uint) {
 	}
 	close(emails)
 	wg.Wait()
-	log.Printf("Insert 500 records in %v", time.Since(startTime))
 }
 
 func checkUpdateUser(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	passwords := make(chan string, 500)
-	startTime := time.Now()
 
 	for range workers {
 		wg.Add(1)
@@ -108,13 +96,11 @@ func checkUpdateUser(db *gorm.DB, workers uint) {
 	}
 	close(passwords)
 	wg.Wait()
-	log.Printf("Update 500 records in %v", time.Since(startTime))
 }
 
 func checkDeleteUser(db *gorm.DB, workers uint) {
 	var wg sync.WaitGroup
 	emails := make(chan string, 500)
-	startTime := time.Now()
 
 	for range workers {
 		wg.Add(1)
@@ -141,32 +127,39 @@ func checkDeleteUser(db *gorm.DB, workers uint) {
 	}
 	close(emails)
 	wg.Wait()
-	log.Printf("Delete 500 records in %v", time.Since(startTime))
 }
 
 func main() {
-	db := databases.ConnectPostgresDb()
-	err := messages.CreateTopic("hungnp25_kafka:9092", "logstash")
+	env, err := env.LoadConfig("./")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Cannot load env variables")
 	}
-	kafkaWriter := messages.ConnectKafkaWriter("hungnp25_kafka:9092", "logstash")
+	db := databases.ConnectPostgresDb(env)
+	kafkaWriter := messages.ConnectKafkaWriter(fmt.Sprintf("%s:9092", env.KafkaBrokerAddress), "logstash")
 	defer kafkaWriter.Close()
 	logRepo := repositories.NewLogRepository(db)
 	logService := services.NewLogService(logRepo, kafkaWriter, 5, 500)
 
-	// addTrigger(db)
-	deleteLogs(db)
+	addTrigger(db)
 	checkAddUsers(db, 5)
-	checkUpdateUser(db, 5)
-	checkDeleteUser(db, 5)
+	// checkUpdateUser(db, 5)
+	// checkDeleteUser(db, 5)
 
+	startTime := time.Now()
 	err = logService.Process()
+	log.Printf("Process 500 records in %v", time.Since(startTime))
 	if err != nil {
 		log.Print(err)
 	}
-	err = logService.DeleteProcessedLogs()
-	if err != nil {
-		log.Print(err)
-	}
+
+	cron := cron.New(cron.WithSeconds())
+	_, err = cron.AddFunc("* */10 * * * *", func() {
+		err = logService.DeleteProcessedLogs()
+		if err != nil {
+			log.Print(err)
+		}
+	})
+
+	cron.Start()
+	select {}
 }

@@ -3,9 +3,10 @@ package env
 import "github.com/spf13/viper"
 
 type Env struct {
-	PostgresUser     string `mapstructure:"POSTGRES_USER"`
-	PostgresPassword string `mapstructure:"POSTGRES_PASSWORD"`
-	PostgresName     string `mapstructure:"POSTGRES_NAME"`
+	PostgresUser       string `mapstructure:"POSTGRES_USER"`
+	PostgresPassword   string `mapstructure:"POSTGRES_PASSWORD"`
+	PostgresName       string `mapstructure:"POSTGRES_NAME"`
+	KafkaBrokerAddress string `mapstructure:"KAFKA_BROKER_ADDRESS"`
 }
 
 func LoadConfig(path string) (env Env, err error) {
